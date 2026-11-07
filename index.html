@@ -3,384 +3,228 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>xsf, reflected XSS detection framework</title>
+<title>xsf · reflected XSS detection framework</title>
 <meta name="description" content="Async-first reflected XSS scanner with DOM-aware reflection analysis, WAF-bypass payloads, and reports you can hand to a client.">
+<meta name="theme-color" content="#0b120d">
+<meta property="og:title" content="xsf · reflected XSS detection framework">
+<meta property="og:description" content="DOM-aware reflection analysis, WAF-bypass payloads, reports you can hand off.">
+<meta property="og:type" content="website">
 <link rel="icon" type="image/svg+xml" href="./logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,400..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./tokens.css">
-<link rel="stylesheet" href="./base.css">
-<style>
-/* Hallmark · shape: custom-cli-page · genre: atmospheric · theme: Terminal (deal 1/3, seed demo-xsf-async-first-reflected-6799·2ba534d4·2026-11-07·r0) · job: sign up · draw: demo-xsf-async-first-reflected-6799
- * hero: Stage · nav: edge-aligned · footer: mast · imagery: none (typeset sessions only) · signature: the real `xsf scan` console output, typed into the hero
- * axes: dark/mono/chromatic-green · posture: committed · contrast: pass · fold: pass · v2.0.0 */
-/* Hallmark · pre-emit critique: P_pass H_pass E_pass S_pass R_pass V_pass · weakest: figures section is thin on its own, paired it with the contexts rows right before it so the section carries mass */
-
-body { font-stretch: var(--stretch-body); font-variant-numeric: tabular-nums; }
-h1, h2, h3 { font-weight: var(--display-weight); font-stretch: var(--stretch-display); letter-spacing: var(--tracking-display); line-height: 1.12; }
-.figure { font-weight: 400; font-stretch: var(--stretch-display); font-size: var(--text-display-s); line-height: 1; font-variant-numeric: tabular-nums; }
-
-/* ---- nav ---- */
-.nav { position: sticky; top: 0; z-index: var(--z-sticky-nav); display: flex; align-items: center; justify-content: space-between; height: 64px; border-bottom: var(--rule-hair) solid var(--color-rule); background: color-mix(in oklab, var(--color-paper) 92%, transparent); backdrop-filter: blur(6px); }
-.nav__inner { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-.nav__brand { display: flex; align-items: center; gap: var(--space-sm); font-size: var(--text-lg); font-weight: 500; color: var(--color-ink); text-decoration: none; }
-.nav__brand .mark { display: grid; place-items: center; width: 28px; height: 28px; background: var(--color-accent-wash); border: var(--rule-hair) solid var(--color-rule-2); color: var(--color-accent); font-size: var(--text-sm); flex-shrink: 0; }
-.nav__links { display: flex; align-items: center; gap: var(--space-xl); list-style: none; margin: 0; padding: 0; }
-.nav__links a { font-size: var(--text-sm); color: var(--color-ink-2); text-decoration: none; }
-.nav__links a:hover { color: var(--color-accent); }
-.nav__right { display: flex; align-items: center; gap: var(--space-lg); }
-.nav__meta { font-size: var(--text-sm); color: var(--color-muted); }
-.nav__cta { display: inline-flex; align-items: center; gap: var(--space-xs); padding: var(--space-xs) var(--space-md); border: var(--rule-hair) solid var(--color-ink-2); color: var(--color-ink); text-decoration: none; font-size: var(--text-sm); }
-.nav__cta:hover { border-color: var(--color-accent); color: var(--color-accent); }
-@media (max-width: 60rem) { .nav__links { display: none; } }
-
-/* ---- shared ---- */
-section { padding-block: var(--section-gap); }
-section.band { padding-block: var(--section-gap-s); }
-.head-block { max-width: 46ch; }
-.head-block .lead { color: var(--color-ink-2); margin-top: var(--space-md); }
-.grid12 { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--gap-columns); align-items: start; }
-@media (max-width: 60rem) { .grid12 { grid-template-columns: 1fr; } }
-
-/* ---- hero ---- */
-.hero { padding-top: var(--space-3xl); padding-bottom: var(--space-3xl); min-height: calc(100dvh - 64px); display: flex; align-items: center; }
-.hero__grid { display: grid; grid-template-columns: 5fr 7fr; gap: var(--space-3xl); align-items: center; width: 100%; }
-@media (max-width: 60rem) { .hero__grid { grid-template-columns: 1fr; gap: var(--space-xl); } }
-.hero h1 { font-size: var(--text-display); max-width: 11ch; }
-.hero .lead { margin-top: var(--space-lg); color: var(--color-ink-2); max-width: 46ch; }
-.install { margin-top: var(--space-xl); background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule); max-width: 46ch; }
-.install__row { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md) var(--space-lg); gap: var(--space-md); }
-.install__cmd { font-size: var(--text-md); color: var(--color-ink); overflow-x: auto; white-space: nowrap; }
-.install__cmd .prompt { color: var(--color-muted); }
-.install__copy { flex-shrink: 0; background: transparent; border: var(--rule-hair) solid var(--color-ink-2); color: var(--color-muted); width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer; }
-.install__copy:hover { border-color: var(--color-accent); color: var(--color-accent); }
-.install__copy:active { background: var(--color-accent-wash); }
-.install__copy:disabled { color: var(--color-rule-2); border-color: var(--color-rule); cursor: not-allowed; }
-.install__foot { padding: var(--space-sm) var(--space-lg); border-top: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); color: var(--color-muted); }
-.hero__actions { display: flex; gap: var(--space-md); margin-top: var(--space-xl); }
-.btn { display: inline-flex; align-items: center; gap: var(--space-xs); padding: var(--space-sm) var(--space-lg); font-size: var(--text-sm); text-decoration: none; border: var(--rule-hair) solid transparent; }
-.btn--primary { background: var(--color-accent); color: var(--color-accent-ink); transition: background-color var(--dur-micro) steps(1); }
-.btn--primary:hover { background: var(--color-ink-2); }
-.btn--primary:active { background: var(--color-accent-ink); color: var(--color-accent); }
-.btn--primary:disabled { background: var(--color-rule-2); color: var(--color-ink-2); cursor: not-allowed; }
-.btn--ghost { border-color: var(--color-ink-2); color: var(--color-ink); }
-.btn--ghost:hover { border-color: var(--color-accent); color: var(--color-accent); }
-.btn--ghost:active { background: var(--color-paper-3); }
-.btn--ghost:disabled { color: var(--color-muted); border-color: var(--color-rule); cursor: not-allowed; }
-
-/* session well */
-.session { background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule); }
-.session__bar { display: flex; align-items: center; justify-content: space-between; padding: var(--space-sm) var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); color: var(--color-muted); }
-.session__body { padding: var(--space-lg); font-size: var(--text-sm); line-height: 1.7; overflow-x: auto; }
-.session pre { margin: 0; white-space: pre; }
-.tok-prompt { color: var(--color-muted); }
-.tok-cmd { color: var(--color-ink); }
-.tok-arg { color: var(--color-accent); }
-.tok-dim { color: var(--color-muted); }
-.tok-ink2 { color: var(--color-ink-2); }
-.tok-crit { color: var(--color-accent); font-weight: 500; }
-.caret { display: inline-block; width: 0.55em; height: 1em; background: var(--color-accent); vertical-align: -0.15em; animation: blink 1s steps(1) 5; }
-@keyframes blink { 50% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
-
-/* ---- live demo ---- */
-.demo { }
-.demo__panel { margin-top: var(--space-2xl); background: var(--color-paper-2); color: var(--color-ink); border: var(--rule-hair) solid var(--color-rule); }
-.demo__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-rule); flex-wrap: wrap; }
-.demo__target { font-size: var(--text-sm); color: var(--color-ink-2); }
-.demo__target .flag { color: var(--color-accent); }
-.demo__run { flex-shrink: 0; display: inline-flex; align-items: center; gap: var(--space-xs); padding: var(--space-xs) var(--space-md); background: var(--color-accent); color: var(--color-accent-ink); border: none; font-size: var(--text-sm); font-family: var(--font-display); cursor: pointer; transition: background-color var(--dur-micro) steps(1); }
-.demo__run:hover { background: var(--color-ink-2); }
-.demo__run:active { background: var(--color-accent-ink); color: var(--color-accent); }
-.demo__run:disabled { background: var(--color-rule-2); color: var(--color-ink-2); cursor: progress; }
-.demo__body { padding: var(--space-lg); font-size: var(--text-sm); line-height: 1.8; min-height: 13.5em; }
-.demo__line { opacity: 1; transform: translateY(0); transition: opacity var(--dur-short) var(--ease-out), transform var(--dur-short) var(--ease-out); }
-.js .demo__line[data-pending] { opacity: 0; transform: translateY(4px); }
-.demo__note { margin-top: var(--space-md); font-size: var(--text-sm); color: var(--color-muted); }
-@media (prefers-reduced-motion: reduce) { .demo__line { transition: none; } }
-
-/* ---- statement ---- */
-.statement { }
-.statement p { font-family: var(--font-display); font-weight: 500; font-stretch: var(--stretch-display); font-size: var(--text-section); line-height: 1.2; letter-spacing: var(--tracking-display); max-width: 60ch; color: var(--color-ink); }
-.statement p .accent { color: var(--color-accent); }
-@media (max-width: 60rem) { .statement p { width: 100%; } }
-
-/* ---- steps (pipeline) ---- */
-.steps { }
-.steps__list { list-style: none; margin: var(--space-2xl) 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap-columns); counter-reset: step; }
-@media (max-width: 60rem) { .steps__list { grid-template-columns: 1fr; } }
-.steps__item { border-top: var(--rule-hair) solid var(--color-rule-2); padding-top: var(--space-lg); }
-.steps__num { counter-increment: step; display: block; font-family: var(--font-display); font-size: var(--text-xl); color: var(--color-accent); margin-bottom: var(--space-sm); }
-.steps__num::before { content: counter(step, decimal-leading-zero); }
-.steps__item h3 { font-size: var(--text-title); margin-bottom: var(--space-xs); }
-.steps__item p { font-size: var(--text-sm); color: var(--color-muted); }
-.steps__arrow { display: none; }
-@media (min-width: 60.01rem) {
-  .steps__list { position: relative; }
-}
-
-/* ---- diff ---- */
-.diff { border: var(--rule-hair) solid var(--color-rule); margin-top: var(--space-2xl); }
-.diff__head { display: grid; grid-template-columns: 1fr 1fr; border-bottom: var(--rule-hair) solid var(--color-rule-2); font-size: var(--text-sm); }
-.diff__head div { padding: var(--space-sm) var(--space-lg); color: var(--color-muted); }
-.diff__head div:first-child { border-right: var(--rule-hair) solid var(--color-rule); }
-.diff__body { font-size: var(--text-sm); }
-.diff__row { display: grid; grid-template-columns: 2.5ch 1fr; }
-.diff__row + .diff__row { border-top: var(--rule-hair) solid var(--color-rule); }
-.diff__gutter { padding: var(--space-sm) 0; text-align: center; color: var(--color-rule-2); user-select: none; }
-.diff__line { padding: var(--space-sm) var(--space-lg) var(--space-sm) 0; }
-.diff__row--del .diff__gutter { color: var(--color-muted); }
-.diff__row--del .diff__line::before { content: "− "; color: var(--color-muted); }
-.diff__row--del .diff__line { color: var(--color-muted); }
-.diff__row--add { background: var(--color-accent-wash); }
-.diff__row--add .diff__gutter { color: var(--color-accent); }
-.diff__row--add .diff__line::before { content: "+ "; color: var(--color-accent); }
-.diff__row--add .diff__line { color: var(--color-ink); }
-@media (max-width: 40rem) { .diff__head { display: none; } }
-
-/* ---- contexts rows ---- */
-.rows { margin-top: var(--space-2xl); border-top: var(--rule-hair) solid var(--color-rule); }
-.rows__row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: var(--space-lg); padding: var(--space-md) 0; border-bottom: var(--rule-hair) solid var(--color-rule); align-items: baseline; }
-.rows__row--head { color: var(--color-muted); font-size: var(--text-sm); padding-bottom: var(--space-sm); }
-.rows__name { font-size: var(--text-title); color: var(--color-ink); }
-.rows__desc { font-size: var(--text-sm); color: var(--color-ink-2); }
-.rows__conf { font-size: var(--text-sm); }
-.rows__conf[data-level="CRITICAL"] { color: var(--color-accent); }
-.rows__conf[data-level="HIGH"] { color: var(--color-ink-2); }
-.rows__conf[data-level="MEDIUM"], .rows__conf[data-level="LOW"] { color: var(--color-muted); }
-.rows__diff { font-size: var(--text-sm); color: var(--color-muted); }
-@media (max-width: 48rem) { .rows__row { grid-template-columns: 1fr; gap: var(--space-2xs); padding-block: var(--space-lg); } .rows__row--head { display: none; } }
-
-/* ---- figures ---- */
-.figures { }
-.figures__list { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: var(--space-2xl); }
-.figures__item { padding: 0 var(--space-lg); border-left: var(--rule-hair) solid var(--color-rule); }
-.figures__item:first-child { padding-left: 0; border-left: none; }
-.figures__item .figure { color: var(--color-ink); }
-.figures__item .figure .unit { font-size: var(--text-lg); color: var(--color-accent); }
-.figures__item small { display: block; margin-top: var(--space-sm); color: var(--color-muted); font-size: var(--text-sm); }
-@media (max-width: 60rem) { .figures__list { grid-template-columns: repeat(2, 1fr); gap: var(--space-xl) 0; } .figures__item:nth-child(2) { border-left: var(--rule-hair) solid var(--color-rule); } .figures__item:nth-child(3) { padding-left: 0; border-left: none; } }
-
-/* ---- band ---- */
-.band { background: var(--color-paper-2); color: var(--color-ink); border-top: var(--rule-hair) solid var(--color-rule); border-bottom: var(--rule-hair) solid var(--color-rule); }
-.band__row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-xl); flex-wrap: wrap; }
-.band h2 { font-size: var(--text-section); max-width: 16ch; }
-.band__actions { display: flex; gap: var(--space-md); align-items: center; }
-.band__legal { margin-top: var(--space-xs); font-size: var(--text-sm); color: var(--color-muted); }
-
-/* ---- footer ---- */
-footer { padding-block: var(--space-3xl) var(--space-2xl); }
-.footer__mast { font-size: var(--text-3xl); font-weight: 500; color: var(--color-ink); margin-bottom: var(--space-2xl); }
-.footer__grid { display: grid; grid-template-columns: 1fr 1fr; max-width: 40ch; gap: var(--space-xl); padding-bottom: var(--space-2xl); border-bottom: var(--rule-hair) solid var(--color-rule); }
-@media (max-width: 48rem) { .footer__grid { grid-template-columns: 1fr; } }
-.footer__legal a { color: inherit; }
-.footer__col h3 { font-size: var(--text-sm); color: var(--color-muted); font-weight: 400; margin-bottom: var(--space-md); }
-.footer__col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-sm); }
-.footer__col a { font-size: var(--text-sm); color: var(--color-ink-2); text-decoration: none; }
-.footer__col a:hover { color: var(--color-accent); }
-.footer__legal { display: flex; justify-content: space-between; margin-top: var(--space-xl); font-size: var(--text-sm); color: var(--color-muted); flex-wrap: wrap; gap: var(--space-sm); }
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add('js')</script>
+<link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+<div class="backdrop" aria-hidden="true"></div>
 
 <header class="nav">
   <div class="container nav__inner">
-    <a class="nav__brand" href="#top"><span class="mark" aria-hidden="true">x_</span> xsf</a>
+    <a class="brand" href="#top"><span class="brand__mark" aria-hidden="true">x_</span>xsf</a>
     <ul class="nav__links">
-      <li><a href="#contexts">contexts</a></li>
+      <li><a href="#demo">demo</a></li>
       <li><a href="#pipeline">pipeline</a></li>
+      <li><a href="#contexts">contexts</a></li>
       <li><a href="#cli">cli</a></li>
-      <li><a href="https://github.com/CyVenom/Reflective_XSS/blob/main/LICENSE">license</a></li>
     </ul>
     <div class="nav__right">
-      <span class="nav__meta">MIT</span>
-      <a class="nav__cta" href="https://github.com/CyVenom/Reflective_XSS">source</a>
+      <span class="tag">MIT</span>
+      <a class="btn btn--ghost btn--sm" href="https://github.com/CyVenom/Reflective_XSS">View source</a>
     </div>
   </div>
 </header>
 
 <main id="top">
 
-  <!-- HERO — Stage posture, Split -->
   <section class="hero">
     <div class="container hero__grid">
       <div>
-        <h1>Find reflected XSS before they do.</h1>
-        <p class="lead">DOM-aware reflection analysis, WAF-bypass payloads, reports you can hand off.</p>
+        <div class="pill"><b>async</b> built on aiohttp</div>
+        <h1>Find reflected XSS <span class="accent">before they do.</span></h1>
+        <p class="lead">DOM-aware reflection analysis, WAF-bypass payloads, and reports you can hand to a client.</p>
         <div class="install">
-          <div class="install__row">
-            <code class="install__cmd"><span class="prompt">$</span> pip install -e . <span class="tok-dim">&amp;&amp;</span> xsf --help</code>
-            <button class="install__copy" type="button" aria-label="Copy install command" data-copy="pip install -e . && xsf --help">⧉</button>
-          </div>
-          <div class="install__foot">From source, MIT licensed, no telemetry.</div>
+          <code><span class="p">$</span> pip install -e . &amp;&amp; xsf --help</code>
+          <button class="copy" type="button" data-copy="pip install -e . && xsf --help" aria-label="Copy install command">copy</button>
         </div>
         <div class="hero__actions">
           <a class="btn btn--primary" href="https://github.com/CyVenom/Reflective_XSS">Read the source</a>
-          <a class="btn btn--ghost" href="#cli">See the CLI</a>
+          <a class="btn btn--ghost" href="#demo">Watch a scan</a>
         </div>
+        <p class="hero__note">From source · MIT licensed · no telemetry</p>
       </div>
-      <div class="session" aria-hidden="false">
-        <div class="session__bar"><span>xsf scan: reflected xss</span><span>0.38s</span></div>
-        <div class="session__body">
-<pre><span class="tok-prompt">$</span> <span class="tok-cmd">xsf scan</span> <span class="tok-arg">"https://target.com/search?q=test"</span> --verbose
 
-  1 <span class="tok-crit">VULNERABILITY CONFIRMED</span>
-
-  [<span class="tok-crit">HIGH</span>]  Finding #1: Reflected XSS
-  Parameter  : q
-  Context    : HTML_TEXT
-  Difficulty : TRIVIAL
-  Payload    : <span class="tok-ink2">&lt;script&gt;alert(AbCdEfGh)&lt;/script&gt;</span>
-  Payloads tested   1      Parameters   1
-  Vulnerabilities   1      Errors       0<span class="caret"></span></pre>
+      <div class="term" role="img" aria-label="Terminal output of an xsf scan confirming one reflected XSS in HTML_TEXT context">
+        <div class="term__bar">
+          <div class="term__dots"><i></i><i></i><i></i></div>
+          <div class="term__title">xsf scan · reflected xss</div>
+          <button class="term__run" type="button" data-replay="heroTerm">replay</button>
         </div>
+        <div class="term__body" id="heroTerm"><pre><span class="line"><span class="t-prompt">$</span> <span class="t-cmd">xsf scan</span> <span class="t-arg">"https://target.com/search?q=test"</span> --verbose</span>
+<span class="line"> </span>
+<span class="line">  <span class="t-ok">✔ 1 VULNERABILITY CONFIRMED</span></span>
+<span class="line"> </span>
+<span class="line">  <span class="t-sev">HIGH</span> Finding #1: Reflected XSS</span>
+<span class="line">  Parameter  : q</span>
+<span class="line">  Context    : HTML_TEXT</span>
+<span class="line">  Difficulty : TRIVIAL</span>
+<span class="line">  Payload    : <span class="t-hit">&lt;script&gt;alert(AbCdEfGh)&lt;/script&gt;</span></span>
+<span class="line"> </span>
+<span class="line">  Payloads tested  1     Parameters  1</span>
+<span class="line">  Vulnerabilities  1     Errors      0</span>
+<span class="line"><span class="t-prompt">$</span> <span class="caret"></span></span></pre></div>
       </div>
     </div>
   </section>
 
-  <!-- DEMO — simulated run -->
-  <section class="demo" id="demo">
+  <section class="metrics" aria-label="Test results">
     <div class="container">
-      <div class="head-block">
-        <h2>Run it, right here.</h2>
-        <p class="lead">Canned output, not a live scan.</p>
+      <div class="metrics__row reveal">
+        <div class="metric"><div class="metric__n">345</div><p>tests passing: unit, integration, benchmark</p></div>
+        <div class="metric"><div class="metric__n">100<small>%</small></div><p>reflection accuracy on the integration suite</p></div>
+        <div class="metric"><div class="metric__n">0<small>%</small></div><p>false-positive rate on the integration suite</p></div>
+        <div class="metric"><div class="metric__n">6</div><p>payload categories, basic to SVG and WAF-bypass</p></div>
       </div>
-      <div class="demo__panel">
-        <div class="demo__bar">
-          <code class="demo__target"><span class="prompt">$</span> xsf scan "demo.local/redirect?url=..." <span class="flag">--waf-bypass</span></code>
-          <button class="demo__run" id="demoRun" type="button">▶ run again</button>
-        </div>
-        <div class="demo__body" id="demoBody" aria-live="polite">
-          <div class="demo__line" data-line>Loading payloads: 50 base + 32 WAF-bypass variants</div>
-          <div class="demo__line" data-line>Probing filters: blocked chars detected &lt; &gt; "</div>
-          <div class="demo__line" data-line>Testing parameter <span class="tok-arg">url</span> (14 payloads)</div>
-          <div class="demo__line" data-line>&nbsp;</div>
-          <div class="demo__line" data-line>1 <span class="tok-crit">VULNERABILITY CONFIRMED</span></div>
-          <div class="demo__line" data-line>&nbsp;</div>
-          <div class="demo__line" data-line>[<span class="tok-crit">HIGH</span>]  Finding #1: Reflected XSS</div>
-          <div class="demo__line" data-line>Parameter  : url</div>
-          <div class="demo__line" data-line>Context    : HTML_ATTRIBUTE_URL</div>
-          <div class="demo__line" data-line>Difficulty : EASY</div>
-          <div class="demo__line" data-line>Payload    : <span class="tok-ink2">javascript:alert(1)//</span></div>
-          <div class="demo__line" data-line>Notes      : <span class="tok-dim">Filter blocks &lt; &gt; " but not the javascript: scheme.</span></div>
-        </div>
-      </div>
-      <p class="demo__note">The real scanner needs authorisation. See the CLI reference below.</p>
     </div>
   </section>
 
-  <!-- STATEMENT -->
   <section class="statement">
-    <div class="container">
-      <p>xsf performs true <span class="accent">DOM-aware reflection analysis</span>: where a payload landed, which characters survived, how hard exploitation really is.</p>
+    <div class="container reveal">
+      <p>xsf does <span class="accent">DOM-aware reflection analysis</span>: <b>where a payload landed, which characters survived, and how hard exploitation really is.</b></p>
     </div>
   </section>
 
-  <!-- STEPS — pipeline -->
-  <section class="steps" id="pipeline">
+  <section id="demo">
     <div class="container">
-      <div class="head-block">
-        <h2>One command, five stages.</h2>
-        <p class="lead">A scan is a pipeline. Each stage is independently testable and async.</p>
-      </div>
-      <ol class="steps__list">
-        <li class="steps__item"><span class="steps__num"></span><h3>Crawler</h3><p>Follows links, finds JS endpoints and hidden params.</p></li>
-        <li class="steps__item"><span class="steps__num"></span><h3>Payload engine</h3><p>Loads and ranks payloads by context.</p></li>
-        <li class="steps__item"><span class="steps__num"></span><h3>Scanner</h3><p>aiohttp and a bounded semaphore, concurrent requests.</p></li>
-        <li class="steps__item"><span class="steps__num"></span><h3>Reflection analyzer</h3><p>DOM parse, encoding check, FP filter.</p></li>
-        <li class="steps__item"><span class="steps__num"></span><h3>Reporters</h3><p>Console, JSON, HTML or CSV: same findings, four formats.</p></li>
-      </ol>
-    </div>
-  </section>
-
-  <!-- DIFF -->
-  <section class="diff-section">
-    <div class="container">
-      <div class="head-block">
-        <h2>A reflection is not a vulnerability.</h2>
-        <p class="lead">Most scanners stop at the first match. xsf keeps going until it knows the match is exploitable.</p>
-      </div>
-      <div class="diff">
-        <div class="diff__head"><div>a/naive-scanner</div><div>b/xsf</div></div>
-        <div class="diff__body">
-          <div class="diff__row diff__row--del"><div class="diff__gutter">1</div><div class="diff__line">regex-matches the raw payload string</div></div>
-          <div class="diff__row diff__row--add"><div class="diff__gutter">1</div><div class="diff__line">parses the live DOM to find the real context</div></div>
-          <div class="diff__row diff__row--del"><div class="diff__gutter">2</div><div class="diff__line">flags every reflection as a hit</div></div>
-          <div class="diff__row diff__row--add"><div class="diff__gutter">2</div><div class="diff__line">scores confidence per context</div></div>
-          <div class="diff__row diff__row--del"><div class="diff__gutter">3</div><div class="diff__line">no sense of which characters survived encoding</div></div>
-          <div class="diff__row diff__row--add"><div class="diff__gutter">3</div><div class="diff__line">fingerprints HTML, URL and JS-escape encoding</div></div>
-          <div class="diff__row diff__row--del"><div class="diff__gutter">4</div><div class="diff__line">one evidence string, no exploitation notes</div></div>
-          <div class="diff__row diff__row--add"><div class="diff__gutter">4</div><div class="diff__line">rates exploitation difficulty and explains why</div></div>
+      <div class="hero__grid" style="align-items:start">
+        <div class="section-head reveal" style="margin-bottom:0">
+          <div class="eyebrow">demo</div>
+          <h2>Run it, right here.</h2>
+          <p>A WAF filters <code>&lt;</code> <code>&gt;</code> and <code>"</code>, so xsf switches to a <code>javascript:</code> payload in a URL attribute. Hit replay to watch it work.</p>
+          <p class="dim" style="margin-top:16px;font-size:.9rem">Canned output, not a live scan. The real scanner needs authorisation, see the CLI below.</p>
+        </div>
+        <div class="term reveal">
+          <div class="term__bar">
+            <div class="term__dots"><i></i><i></i><i></i></div>
+            <div class="term__title">demo.local · --waf-bypass</div>
+            <button class="term__run" type="button" id="demoRun" data-replay="demoTerm">▶ run</button>
+          </div>
+          <div class="term__body" id="demoTerm" aria-live="polite"><pre><span class="line"><span class="t-prompt">$</span> <span class="t-cmd">xsf scan</span> <span class="t-arg">"demo.local/redirect?url=..."</span> <span class="t-arg">--waf-bypass</span></span>
+<span class="line"> </span>
+<span class="line"><span class="dim">Loading payloads: 50 base + 32 WAF-bypass variants</span></span>
+<span class="line"><span class="dim">Probing filters: blocked chars detected</span> &lt; &gt; "</span>
+<span class="line"><span class="dim">Testing parameter</span> <span class="t-arg">url</span> <span class="dim">(14 payloads)</span></span>
+<span class="line"> </span>
+<span class="line"><span class="t-ok">✔ 1 VULNERABILITY CONFIRMED</span></span>
+<span class="line"> </span>
+<span class="line"><span class="t-sev">HIGH</span> Finding #1: Reflected XSS</span>
+<span class="line">Parameter  : url</span>
+<span class="line">Context    : HTML_ATTRIBUTE_URL</span>
+<span class="line">Difficulty : EASY</span>
+<span class="line">Payload    : <span class="t-hit">javascript:alert(1)//</span></span>
+<span class="line">Notes      : <span class="dim">Filter blocks &lt; &gt; " but not the javascript: scheme.</span></span></pre></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ROWS — reflection contexts -->
-  <section class="contexts" id="contexts">
+  <section id="pipeline">
     <div class="container">
-      <div class="head-block">
+      <div class="section-head reveal">
+        <div class="eyebrow">pipeline</div>
+        <h2>One command, five stages.</h2>
+        <p>A scan is a pipeline. Each stage is independently testable and async.</p>
+      </div>
+      <div class="pipe reveal">
+        <div class="pipe__item"><span class="pipe__n">01</span><h3>Crawler</h3><p>Follows links, finds JS endpoints and hidden params.</p></div>
+        <div class="pipe__item"><span class="pipe__n">02</span><h3>Payload engine</h3><p>Loads and ranks payloads by context.</p></div>
+        <div class="pipe__item"><span class="pipe__n">03</span><h3>Scanner</h3><p>aiohttp and a bounded semaphore for concurrent requests.</p></div>
+        <div class="pipe__item"><span class="pipe__n">04</span><h3>Reflection analyzer</h3><p>DOM parse, encoding check, false-positive filter.</p></div>
+        <div class="pipe__item"><span class="pipe__n">05</span><h3>Reporters</h3><p>Console, JSON, HTML or CSV: same findings, four formats.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="eyebrow">why it's different</div>
+        <h2>A reflection is not a vulnerability.</h2>
+        <p>Most scanners stop at the first match. xsf keeps going until it knows the match is exploitable.</p>
+      </div>
+      <div class="compare reveal">
+        <div class="card">
+          <div class="card__head"><span>a/naive-scanner</span></div>
+          <ul>
+            <li>regex-matches the raw payload string</li>
+            <li>flags every reflection as a hit</li>
+            <li>no sense of which characters survived encoding</li>
+            <li>one evidence string, no exploitation notes</li>
+          </ul>
+        </div>
+        <div class="card card--xsf">
+          <div class="card__head"><span>b/xsf</span><span>✔</span></div>
+          <ul>
+            <li>parses the live DOM to find the real context</li>
+            <li>scores confidence per context</li>
+            <li>fingerprints HTML, URL and JS-escape encoding</li>
+            <li>rates exploitation difficulty and explains why</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contexts">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="eyebrow">contexts</div>
         <h2>Ten structural contexts, each scored on its own terms.</h2>
       </div>
-      <div class="rows">
-        <div class="rows__row rows__row--head"><div>context</div><div>description</div><div>confidence</div><div>typical difficulty</div></div>
-        <div class="rows__row"><div class="rows__name">SCRIPT_BLOCK</div><div class="rows__desc">Bare executable JS</div><div class="rows__conf" data-level="CRITICAL">Critical</div><div class="rows__diff">Trivial</div></div>
-        <div class="rows__row"><div class="rows__name">HTML_ATTRIBUTE_EVENT</div><div class="rows__desc">onclick, onerror and similar</div><div class="rows__conf" data-level="CRITICAL">Critical</div><div class="rows__diff">Trivial</div></div>
-        <div class="rows__row"><div class="rows__name">SCRIPT_STRING</div><div class="rows__desc">A JS string literal</div><div class="rows__conf" data-level="HIGH">High</div><div class="rows__diff">Easy</div></div>
-        <div class="rows__row"><div class="rows__name">HTML_ATTRIBUTE_URL</div><div class="rows__desc">href, src, action</div><div class="rows__conf" data-level="HIGH">High</div><div class="rows__diff">Easy</div></div>
-        <div class="rows__row"><div class="rows__name">HTML_TEXT</div><div class="rows__desc">Plain text node</div><div class="rows__conf" data-level="HIGH">High</div><div class="rows__diff">Trivial</div></div>
-        <div class="rows__row"><div class="rows__name">HTML_ATTRIBUTE</div><div class="rows__desc">Generic attribute value</div><div class="rows__conf" data-level="MEDIUM">Medium</div><div class="rows__diff">Moderate</div></div>
-        <div class="rows__row"><div class="rows__name">STYLE_BLOCK</div><div class="rows__desc">A &lt;style&gt; block</div><div class="rows__conf" data-level="MEDIUM">Medium</div><div class="rows__diff">Moderate</div></div>
-        <div class="rows__row"><div class="rows__name">HTML_COMMENT</div><div class="rows__desc">An HTML comment</div><div class="rows__conf" data-level="LOW">Low</div><div class="rows__diff">Hard</div></div>
-        <div class="rows__row"><div class="rows__name">META_TAG</div><div class="rows__desc">A &lt;meta&gt; attribute</div><div class="rows__conf" data-level="LOW">Low</div><div class="rows__diff">Hard</div></div>
-        <div class="rows__row"><div class="rows__name">UNKNOWN</div><div class="rows__desc">Malformed HTML</div><div class="rows__conf" data-level="LOW">Low</div><div class="rows__diff">None</div></div>
+      <div class="table reveal" role="table">
+        <div class="tr tr--head" role="row"><div>context</div><div>description</div><div>confidence</div><div>difficulty</div></div>
+        <div class="tr" role="row"><div class="tr__name">SCRIPT_BLOCK</div><div class="tr__desc">Bare executable JS</div><div class="meter" data-l="4"><i><b></b><b></b><b></b><b></b></i>Critical</div><div class="tr__diff">Trivial</div></div>
+        <div class="tr" role="row"><div class="tr__name">HTML_ATTRIBUTE_EVENT</div><div class="tr__desc">onclick, onerror and similar</div><div class="meter" data-l="4"><i><b></b><b></b><b></b><b></b></i>Critical</div><div class="tr__diff">Trivial</div></div>
+        <div class="tr" role="row"><div class="tr__name">SCRIPT_STRING</div><div class="tr__desc">A JS string literal</div><div class="meter" data-l="3"><i><b></b><b></b><b></b><b></b></i>High</div><div class="tr__diff">Easy</div></div>
+        <div class="tr" role="row"><div class="tr__name">HTML_ATTRIBUTE_URL</div><div class="tr__desc">href, src, action</div><div class="meter" data-l="3"><i><b></b><b></b><b></b><b></b></i>High</div><div class="tr__diff">Easy</div></div>
+        <div class="tr" role="row"><div class="tr__name">HTML_TEXT</div><div class="tr__desc">Plain text node</div><div class="meter" data-l="3"><i><b></b><b></b><b></b><b></b></i>High</div><div class="tr__diff">Trivial</div></div>
+        <div class="tr" role="row"><div class="tr__name">HTML_ATTRIBUTE</div><div class="tr__desc">Generic attribute value</div><div class="meter" data-l="2"><i><b></b><b></b><b></b><b></b></i>Medium</div><div class="tr__diff">Moderate</div></div>
+        <div class="tr" role="row"><div class="tr__name">STYLE_BLOCK</div><div class="tr__desc">A &lt;style&gt; block</div><div class="meter" data-l="2"><i><b></b><b></b><b></b><b></b></i>Medium</div><div class="tr__diff">Moderate</div></div>
+        <div class="tr" role="row"><div class="tr__name">HTML_COMMENT</div><div class="tr__desc">An HTML comment</div><div class="meter" data-l="1"><i><b></b><b></b><b></b><b></b></i>Low</div><div class="tr__diff">Hard</div></div>
+        <div class="tr" role="row"><div class="tr__name">META_TAG</div><div class="tr__desc">A &lt;meta&gt; attribute</div><div class="meter" data-l="1"><i><b></b><b></b><b></b><b></b></i>Low</div><div class="tr__diff">Hard</div></div>
+        <div class="tr" role="row"><div class="tr__name">UNKNOWN</div><div class="tr__desc">Malformed HTML</div><div class="meter" data-l="1"><i><b></b><b></b><b></b><b></b></i>Low</div><div class="tr__diff">None</div></div>
       </div>
     </div>
   </section>
 
-  <!-- FIGURES -->
-  <section class="figures">
+  <section id="cli">
     <div class="container">
-      <div class="head-block">
-        <h2>Checked against a live mock server.</h2>
-      </div>
-      <div class="figures__list">
-        <div class="figures__item"><span class="figure">345</span><small>tests passing: unit, integration, benchmark</small></div>
-        <div class="figures__item"><span class="figure">100<span class="unit">%</span></span><small>reflection accuracy on the integration suite</small></div>
-        <div class="figures__item"><span class="figure">0<span class="unit">%</span></span><small>false-positive rate on the integration suite</small></div>
-        <div class="figures__item"><span class="figure">6</span><small>payload categories: basic to SVG and WAF-bypass</small></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- STEPS-style CLI reference as rows -->
-  <section class="cli" id="cli">
-    <div class="container">
-      <div class="head-block">
+      <div class="section-head reveal">
+        <div class="eyebrow">cli</div>
         <h2>Five commands. No daemon to babysit.</h2>
       </div>
-      <div class="rows">
-        <div class="rows__row rows__row--head"><div>command</div><div>does</div><div></div><div></div></div>
-        <div class="rows__row"><div class="rows__name tok-cmd">xsf scan</div><div class="rows__desc">Query params, forms, or a full crawl</div><div></div><div></div></div>
-        <div class="rows__row"><div class="rows__name tok-cmd">xsf crawl</div><div class="rows__desc">Endpoints, forms, injectable parameters</div><div></div><div></div></div>
-        <div class="rows__row"><div class="rows__name tok-cmd">xsf payloads</div><div class="rows__desc">List, inspect, export payload sets</div><div></div><div></div></div>
-        <div class="rows__row"><div class="rows__name tok-cmd">xsf report</div><div class="rows__desc">Re-render a saved scan as HTML or CSV</div><div></div><div></div></div>
-        <div class="rows__row"><div class="rows__name tok-cmd">xsf config</div><div class="rows__desc">Init, show, validate scan config</div><div></div><div></div></div>
+      <div class="cli reveal">
+        <div class="cmd"><code><span class="p">$</span> xsf scan</code><p>Query params, forms, or a full crawl.</p></div>
+        <div class="cmd"><code><span class="p">$</span> xsf crawl</code><p>Endpoints, forms, injectable parameters.</p></div>
+        <div class="cmd"><code><span class="p">$</span> xsf payloads</code><p>List, inspect, export payload sets.</p></div>
+        <div class="cmd"><code><span class="p">$</span> xsf report</code><p>Re-render a saved scan as HTML or CSV.</p></div>
+        <div class="cmd"><code><span class="p">$</span> xsf config</code><p>Init, show, validate scan config.</p></div>
+        <div class="cmd cmd--wide"><code><span class="p">$</span> xsf scan "$TARGET" --forms --waf-bypass</code><p class="dim">Everything on: forms, plus the WAF-bypass payload set.</p></div>
       </div>
     </div>
   </section>
 
-  <!-- BAND — close -->
   <section class="band">
-    <div class="container band__row">
-      <div>
-        <h2>Authorised testing only. Point it at your own scope and go.</h2>
-        <p class="band__legal">Pentest engagements, bug bounty scope, your own lab, CTFs.</p>
-      </div>
-      <div class="band__actions">
-        <code class="install__cmd"><span class="prompt">$</span> xsf scan "$TARGET" --forms --waf-bypass</code>
-        <a class="btn btn--primary" href="https://github.com/CyVenom/Reflective_XSS">Get the source</a>
+    <div class="container">
+      <div class="band__box reveal">
+        <div>
+          <h2>Authorised testing only. Point it at your own scope and go.</h2>
+          <p>Pentest engagements, bug bounty scope, your own lab, CTFs.</p>
+        </div>
+        <div class="band__cta">
+          <a class="btn btn--primary" href="https://github.com/CyVenom/Reflective_XSS">Get the source</a>
+          <code>$ pip install -e . &amp;&amp; xsf --help</code>
+        </div>
       </div>
     </div>
   </section>
@@ -389,8 +233,11 @@ footer { padding-block: var(--space-3xl) var(--space-2xl); }
 
 <footer>
   <div class="container">
-    <div class="footer__mast">xsf</div>
     <div class="footer__grid">
+      <div>
+        <a class="brand" href="#top"><span class="brand__mark" aria-hidden="true">x_</span>xsf</a>
+        <p class="footer__blurb">Async-first reflected XSS detection. MIT licensed.</p>
+      </div>
       <div class="footer__col">
         <h3>project</h3>
         <ul>
@@ -410,49 +257,56 @@ footer { padding-block: var(--space-3xl) var(--space-2xl); }
       </div>
     </div>
     <div class="footer__legal">
-      <span>© 2026 CyVen, built by <a href="https://github.com/CyVenom">CyVenom</a>, MIT licensed.</span>
+      <span>© 2026 CyVenom. MIT licensed.</span>
+      <span>Built by <a href="https://github.com/CyVenom">CyVenom</a></span>
     </div>
   </div>
 </footer>
 
 <script>
 (() => {
-  const btn = document.getElementById('demoRun');
-  const body = document.getElementById('demoBody');
-  if (!btn || !body) return;
-  document.documentElement.classList.add('js');
-  const lines = Array.from(body.querySelectorAll('[data-line]'));
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let running = false;
-  btn.addEventListener('click', () => {
-    if (running) return;
-    running = true;
-    btn.disabled = true;
-    const prevLabel = btn.textContent;
-    btn.textContent = '… scanning';
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // terminal replay: reveal lines one by one
+  function play(term, btn) {
+    const lines = [...term.querySelectorAll('.line')];
+    if (term._t) term._t.forEach(clearTimeout);
+    term._t = [];
     lines.forEach((l) => l.setAttribute('data-pending', ''));
-    const step = reduced ? 0 : 140;
-    lines.forEach((line, i) => {
-      setTimeout(() => line.removeAttribute('data-pending'), i * step);
+    const step = reduced ? 0 : 90;
+    if (btn) btn.disabled = true;
+    lines.forEach((l, i) => term._t.push(setTimeout(() => l.removeAttribute('data-pending'), 250 + i * step)));
+    term._t.push(setTimeout(() => { if (btn) btn.disabled = false; }, 250 + lines.length * step + 100));
+  }
+  document.querySelectorAll('[data-replay]').forEach((btn) => {
+    const term = document.getElementById(btn.dataset.replay);
+    btn.addEventListener('click', () => play(term, btn));
+  });
+
+  // play each terminal when it scrolls into view
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver((es) => {
+    es.forEach((e) => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      const t = e.target.matches('.term__body') ? e.target : e.target.querySelector?.('.term__body');
+      if (t && !t._played) { t._played = true; play(t, e.target.querySelector?.('[data-replay]')); }
+      io.unobserve(e.target);
     });
-    setTimeout(() => {
-      btn.disabled = false;
-      btn.textContent = prevLabel;
-      running = false;
-    }, lines.length * step + 200);
+  }, { threshold: 0.2 }) : null;
+  document.querySelectorAll('.reveal').forEach((el) => io ? io.observe(el) : el.classList.add('in'));
+  const hero = document.getElementById('heroTerm');
+  if (hero) { hero._played = true; play(hero, document.querySelector('[data-replay="heroTerm"]')); }
+
+  // copy button
+  document.querySelectorAll('[data-copy]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      navigator.clipboard?.writeText(btn.dataset.copy).then(() => {
+        btn.textContent = 'copied'; btn.classList.add('ok');
+        setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('ok'); }, 1400);
+      }).catch(() => {});
+    });
   });
 })();
-
-document.querySelectorAll('[data-copy]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const text = btn.getAttribute('data-copy');
-    navigator.clipboard?.writeText(text).then(() => {
-      const prev = btn.textContent;
-      btn.textContent = '✓';
-      setTimeout(() => { btn.textContent = prev; }, 1400);
-    }).catch(() => {});
-  });
-});
 </script>
 </body>
 </html>

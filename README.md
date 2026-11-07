@@ -18,7 +18,7 @@ npx serve .
 
 ## Design
 
-Dark terminal theme, Martian Mono throughout, OKLCH colour scale. Tokens live in `tokens.css`, base rules in `base.css`, page-specific styles are inline in `index.html`.
+Dark terminal theme: Geist for text, JetBrains Mono for code, OKLCH colour scale. All styles live in `styles.css`.
 
 ## License
 
