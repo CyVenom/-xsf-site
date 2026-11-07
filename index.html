@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>xsf, reflected XSS detection framework</title>
 <meta name="description" content="Async-first reflected XSS scanner with DOM-aware reflection analysis, WAF-bypass payloads, and reports you can hand to a client.">
+<link rel="icon" type="image/svg+xml" href="./logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,400..700&display=swap" rel="stylesheet">
@@ -24,7 +25,7 @@ h1, h2, h3 { font-weight: var(--display-weight); font-stretch: var(--stretch-dis
 .nav { position: sticky; top: 0; z-index: var(--z-sticky-nav); display: flex; align-items: center; justify-content: space-between; height: 64px; border-bottom: var(--rule-hair) solid var(--color-rule); background: color-mix(in oklab, var(--color-paper) 92%, transparent); backdrop-filter: blur(6px); }
 .nav__inner { display: flex; align-items: center; justify-content: space-between; width: 100%; }
 .nav__brand { display: flex; align-items: center; gap: var(--space-sm); font-size: var(--text-lg); font-weight: 500; color: var(--color-ink); text-decoration: none; }
-.nav__brand .dollar { color: var(--color-accent); }
+.nav__brand .mark { display: grid; place-items: center; width: 28px; height: 28px; background: var(--color-accent-wash); border: var(--rule-hair) solid var(--color-rule-2); color: var(--color-accent); font-size: var(--text-sm); flex-shrink: 0; }
 .nav__links { display: flex; align-items: center; gap: var(--space-xl); list-style: none; margin: 0; padding: 0; }
 .nav__links a { font-size: var(--text-sm); color: var(--color-ink-2); text-decoration: none; }
 .nav__links a:hover { color: var(--color-accent); }
@@ -82,6 +83,22 @@ section.band { padding-block: var(--section-gap-s); }
 .caret { display: inline-block; width: 0.55em; height: 1em; background: var(--color-accent); vertical-align: -0.15em; animation: blink 1s steps(1) 5; }
 @keyframes blink { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
+
+/* ---- live demo ---- */
+.demo { }
+.demo__panel { margin-top: var(--space-2xl); background: var(--color-paper-2); color: var(--color-ink); border: var(--rule-hair) solid var(--color-rule); }
+.demo__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-rule); flex-wrap: wrap; }
+.demo__target { font-size: var(--text-sm); color: var(--color-ink-2); }
+.demo__target .flag { color: var(--color-accent); }
+.demo__run { flex-shrink: 0; display: inline-flex; align-items: center; gap: var(--space-xs); padding: var(--space-xs) var(--space-md); background: var(--color-accent); color: var(--color-accent-ink); border: none; font-size: var(--text-sm); font-family: var(--font-display); cursor: pointer; transition: background-color var(--dur-micro) steps(1); }
+.demo__run:hover { background: var(--color-ink-2); }
+.demo__run:active { background: var(--color-accent-ink); color: var(--color-accent); }
+.demo__run:disabled { background: var(--color-rule-2); color: var(--color-ink-2); cursor: progress; }
+.demo__body { padding: var(--space-lg); font-size: var(--text-sm); line-height: 1.8; min-height: 13.5em; }
+.demo__line { opacity: 1; transform: translateY(0); transition: opacity var(--dur-short) var(--ease-out), transform var(--dur-short) var(--ease-out); }
+.js .demo__line[data-pending] { opacity: 0; transform: translateY(4px); }
+.demo__note { margin-top: var(--space-md); font-size: var(--text-sm); color: var(--color-muted); }
+@media (prefers-reduced-motion: reduce) { .demo__line { transition: none; } }
 
 /* ---- statement ---- */
 .statement { }
@@ -169,7 +186,7 @@ footer { padding-block: var(--space-3xl) var(--space-2xl); }
 
 <header class="nav">
   <div class="container nav__inner">
-    <a class="nav__brand" href="#top"><span class="dollar">$</span> xsf</a>
+    <a class="nav__brand" href="#top"><span class="mark" aria-hidden="true">x_</span> xsf</a>
     <ul class="nav__links">
       <li><a href="#contexts">contexts</a></li>
       <li><a href="#pipeline">pipeline</a></li>
@@ -222,6 +239,37 @@ footer { padding-block: var(--space-3xl) var(--space-2xl); }
     </div>
   </section>
 
+  <!-- DEMO — simulated run -->
+  <section class="demo" id="demo">
+    <div class="container">
+      <div class="head-block">
+        <h2>Run it, right here.</h2>
+        <p class="lead">Canned output, not a live scan.</p>
+      </div>
+      <div class="demo__panel">
+        <div class="demo__bar">
+          <code class="demo__target"><span class="prompt">$</span> xsf scan "demo.local/redirect?url=..." <span class="flag">--waf-bypass</span></code>
+          <button class="demo__run" id="demoRun" type="button">▶ run again</button>
+        </div>
+        <div class="demo__body" id="demoBody" aria-live="polite">
+          <div class="demo__line" data-line>Loading payloads: 50 base + 32 WAF-bypass variants</div>
+          <div class="demo__line" data-line>Probing filters: blocked chars detected &lt; &gt; "</div>
+          <div class="demo__line" data-line>Testing parameter <span class="tok-arg">url</span> (14 payloads)</div>
+          <div class="demo__line" data-line>&nbsp;</div>
+          <div class="demo__line" data-line>1 <span class="tok-crit">VULNERABILITY CONFIRMED</span></div>
+          <div class="demo__line" data-line>&nbsp;</div>
+          <div class="demo__line" data-line>[<span class="tok-crit">HIGH</span>]  Finding #1: Reflected XSS</div>
+          <div class="demo__line" data-line>Parameter  : url</div>
+          <div class="demo__line" data-line>Context    : HTML_ATTRIBUTE_URL</div>
+          <div class="demo__line" data-line>Difficulty : EASY</div>
+          <div class="demo__line" data-line>Payload    : <span class="tok-ink2">javascript:alert(1)//</span></div>
+          <div class="demo__line" data-line>Notes      : <span class="tok-dim">Filter blocks &lt; &gt; " but not the javascript: scheme.</span></div>
+        </div>
+      </div>
+      <p class="demo__note">The real scanner needs authorisation. See the CLI reference below.</p>
+    </div>
+  </section>
+
   <!-- STATEMENT -->
   <section class="statement">
     <div class="container">
@@ -237,10 +285,10 @@ footer { padding-block: var(--space-3xl) var(--space-2xl); }
         <p class="lead">A scan is a pipeline. Each stage is independently testable and async.</p>
       </div>
       <ol class="steps__list">
-        <li class="steps__item"><span class="steps__num"></span><h3>Crawler</h3><p>Follows links, extracts JS endpoints, mines hidden parameters.</p></li>
-        <li class="steps__item"><span class="steps__num"></span><h3>Payload engine</h3><p>Loads and prioritises payloads by injection context before testing.</p></li>
-        <li class="steps__item"><span class="steps__num"></span><h3>Scanner</h3><p>aiohttp + a bounded semaphore fire requests concurrently.</p></li>
-        <li class="steps__item"><span class="steps__num"></span><h3>Reflection analyzer</h3><p>DOM parse, encoding check, false-positive filter.</p></li>
+        <li class="steps__item"><span class="steps__num"></span><h3>Crawler</h3><p>Follows links, finds JS endpoints and hidden params.</p></li>
+        <li class="steps__item"><span class="steps__num"></span><h3>Payload engine</h3><p>Loads and ranks payloads by context.</p></li>
+        <li class="steps__item"><span class="steps__num"></span><h3>Scanner</h3><p>aiohttp and a bounded semaphore, concurrent requests.</p></li>
+        <li class="steps__item"><span class="steps__num"></span><h3>Reflection analyzer</h3><p>DOM parse, encoding check, FP filter.</p></li>
         <li class="steps__item"><span class="steps__num"></span><h3>Reporters</h3><p>Console, JSON, HTML or CSV: same findings, four formats.</p></li>
       </ol>
     </div>
@@ -259,11 +307,11 @@ footer { padding-block: var(--space-3xl) var(--space-2xl); }
           <div class="diff__row diff__row--del"><div class="diff__gutter">1</div><div class="diff__line">regex-matches the raw payload string</div></div>
           <div class="diff__row diff__row--add"><div class="diff__gutter">1</div><div class="diff__line">parses the live DOM to find the real context</div></div>
           <div class="diff__row diff__row--del"><div class="diff__gutter">2</div><div class="diff__line">flags every reflection as a hit</div></div>
-          <div class="diff__row diff__row--add"><div class="diff__gutter">2</div><div class="diff__line">scores confidence per reflection context, CRITICAL to LOW</div></div>
+          <div class="diff__row diff__row--add"><div class="diff__gutter">2</div><div class="diff__line">scores confidence per context</div></div>
           <div class="diff__row diff__row--del"><div class="diff__gutter">3</div><div class="diff__line">no sense of which characters survived encoding</div></div>
-          <div class="diff__row diff__row--add"><div class="diff__gutter">3</div><div class="diff__line">fingerprints HTML entity, URL, JS-escape and double encoding per character</div></div>
+          <div class="diff__row diff__row--add"><div class="diff__gutter">3</div><div class="diff__line">fingerprints HTML, URL and JS-escape encoding</div></div>
           <div class="diff__row diff__row--del"><div class="diff__gutter">4</div><div class="diff__line">one evidence string, no exploitation notes</div></div>
-          <div class="diff__row diff__row--add"><div class="diff__gutter">4</div><div class="diff__line">rates exploitation difficulty from TRIVIAL to NONE and explains why</div></div>
+          <div class="diff__row diff__row--add"><div class="diff__gutter">4</div><div class="diff__line">rates exploitation difficulty and explains why</div></div>
         </div>
       </div>
     </div>
@@ -368,6 +416,33 @@ footer { padding-block: var(--space-3xl) var(--space-2xl); }
 </footer>
 
 <script>
+(() => {
+  const btn = document.getElementById('demoRun');
+  const body = document.getElementById('demoBody');
+  if (!btn || !body) return;
+  document.documentElement.classList.add('js');
+  const lines = Array.from(body.querySelectorAll('[data-line]'));
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let running = false;
+  btn.addEventListener('click', () => {
+    if (running) return;
+    running = true;
+    btn.disabled = true;
+    const prevLabel = btn.textContent;
+    btn.textContent = '… scanning';
+    lines.forEach((l) => l.setAttribute('data-pending', ''));
+    const step = reduced ? 0 : 140;
+    lines.forEach((line, i) => {
+      setTimeout(() => line.removeAttribute('data-pending'), i * step);
+    });
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = prevLabel;
+      running = false;
+    }, lines.length * step + 200);
+  });
+})();
+
 document.querySelectorAll('[data-copy]').forEach((btn) => {
   btn.addEventListener('click', () => {
     const text = btn.getAttribute('data-copy');
