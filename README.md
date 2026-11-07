@@ -1,4 +1,13 @@
-# xsf-site
+<p align="center">
+  <img src="logo.svg" alt="xsf logo" width="96" height="96">
+</p>
+
+<h1 align="center">xsf-site</h1>
+
+<p align="center">
+  Landing page and demo for <b>xsf</b>, an async-first reflected XSS detection framework.<br>
+  <a href="https://xsf-site.vercel.app">Live site</a> · <a href="https://github.com/CyVenom/Reflective_XSS">Scanner source</a>
+</p>
 
 Landing page for [**xsf**](https://github.com/CyVenom/Reflective_XSS), an async-first reflected XSS detection framework. This repo is just the marketing/demo site. The actual scanner lives in [Reflective_XSS](https://github.com/CyVenom/Reflective_XSS).
 
